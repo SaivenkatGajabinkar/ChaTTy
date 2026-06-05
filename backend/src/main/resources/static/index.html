@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chaty WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px;}
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        .msg { margin: 5px 0; padding: 10px; border-radius: 5px; }
+        .my-msg { background-color: #d1e7dd; text-align: right; margin-left: 20%;}
+        .their-msg { background-color: #f8d7da; margin-right: 20%;}
+        button { padding: 5px 15px; cursor: pointer; }
+        .btn-setup { background: #0d6efd; color: white; border: none; padding: 10px; border-radius: 5px; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+    <h2>Chaty Real-Time Chat Test</h2>
+
+    <div id="setup-section" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+        <h3>1. Setup Connection</h3>
+        <p style="font-size: 0.9em; color: #555;">To chat, the users and conversation must exist in the database.</p>
+        
+        <button class="btn-setup" onclick="generateDemoData()">🚀 Click here to auto-generate Demo Users & Conversation</button>
+        <br>
+
+        <label>My User ID:</label><br>
+        <input type="text" id="myUserId" style="width: 100%; margin-bottom: 10px;" />
+        
+        <label>Friend User ID:</label><br>
+        <input type="text" id="friendId" style="width: 100%; margin-bottom: 10px;" />
+        
+        <label>Conversation ID:</label><br>
+        <input type="text" id="conversationId" style="width: 100%; margin-bottom: 15px;" />
+        
+        <button onclick="connect()">Connect to Chat</button>
+        <span id="status" style="color: red; margin-left: 10px;">Disconnected</span>
+    </div>
+
+    <div id="chat-section" style="display: none; margin-top: 20px;">
+        <h3>2. Chat Area</h3>
+        <div id="messages"></div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="messageInput" placeholder="Type a message..." style="flex-grow: 1; padding: 5px;" />
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="disconnect()" style="background: #dc3545; color: white; border: none;">Disconnect</button>
+        </div>
+    </div>
+
+    <script>
+        var stompClient = null;
+        var myUserId = null;
+        var conversationId = null;
+
+        // Helper to create demo data
+        async function generateDemoData() {
+            try {
+                // 1. Register User 1 (English)
+                const res1 = await fetch('/auth/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: "Alice", email: "alice" + Date.now() + "@test.com", password: "pass", preferredLanguage: "en" })
+                });
+                const user1 = await res1.json();
+
+                // 2. Register User 2 (Spanish)
+                const res2 = await fetch('/auth/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: "Bob", email: "bob" + Date.now() + "@test.com", password: "pass", preferredLanguage: "es" })
+                });
+                const user2 = await res2.json();
+
+                // 3. Create Conversation
+                const resConv = await fetch(`/conversation/create?user1Id=${user1.userId}&user2Id=${user2.userId}`, { method: 'POST' });
+                const conv = await resConv.json();
+
+                // Fill the inputs
+                document.getElementById('myUserId').value = user1.userId;
+                document.getElementById('friendId').value = user2.userId;
+                document.getElementById('conversationId').value = conv.id;
+
+                alert("Demo Data Created! Alice (EN) and Bob (ES) are ready. You can now click Connect.");
+
+            } catch (e) {
+                alert("Error setting up demo data: " + e.message);
+            }
+        }
+
+        function connect() {
+            myUserId = document.getElementById('myUserId').value;
+            conversationId = document.getElementById('conversationId').value;
+            var friendId = document.getElementById('friendId').value;
+
+            if (!myUserId || !conversationId || !friendId) {
+                alert("Please fill in all setup fields.");
+                return;
+            }
+
+            var socket = new SockJS('/chat');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function (frame) {
+                document.getElementById('status').innerText = 'Connected';
+                document.getElementById('status').style.color = 'green';
+                document.getElementById('setup-section').style.display = 'none';
+                document.getElementById('chat-section').style.display = 'block';
+
+                stompClient.subscribe('/user/' + myUserId + '/queue/messages', function (messageOutput) {
+                    var msg = JSON.parse(messageOutput.body);
+                    showMessage(msg);
+                });
+            }, function(error) {
+                alert("STOMP error " + error);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            document.getElementById('status').innerText = 'Disconnected';
+            document.getElementById('status').style.color = 'red';
+            document.getElementById('setup-section').style.display = 'block';
+            document.getElementById('chat-section').style.display = 'none';
+        }
+
+        function sendMessage() {
+            var text = document.getElementById('messageInput').value;
+            
+            if (text && stompClient) {
+                var messageDto = {
+                    conversationId: conversationId,
+                    senderId: myUserId,
+                    text: text
+                };
+                
+                stompClient.send("/app/send", {}, JSON.stringify(messageDto));
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        function showMessage(message) {
+            var messagesDiv = document.getElementById('messages');
+            var div = document.createElement('div');
+            
+            var isMyMsg = message.senderId === myUserId;
+            div.className = 'msg ' + (isMyMsg ? 'my-msg' : 'their-msg');
+            
+            var textToDisplay = "";
+            if (isMyMsg) {
+                textToDisplay = "<b>Me:</b> " + message.originalText;
+            } else {
+                textToDisplay = "<b>Friend:</b> " + message.translatedText;
+                if (message.originalText !== message.translatedText) {
+                    textToDisplay += "<br><small style='color: gray'><i>(Translated from " + message.sourceLanguage + ")</i></small>";
+                }
+            }
+            
+            div.innerHTML = textToDisplay;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
