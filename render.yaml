@@ -16,4 +16,4 @@ services:
           name: chatty-db
           property: connectionString
       - key: CORS_ORIGIN
-        value: '*'
+        value: 'https://frontend-henna-three-32.vercel.app'
