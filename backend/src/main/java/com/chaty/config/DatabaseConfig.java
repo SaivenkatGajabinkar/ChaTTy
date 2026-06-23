@@ -17,24 +17,44 @@ public class DatabaseConfig {
             databaseUrl = System.getenv("MYSQL_URL");
         }
         
-        if (databaseUrl != null && (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://"))) {
-            // Convert postgres://user:password@host:port/database to jdbc:postgresql://host:port/database
+        if (databaseUrl != null && (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://") || databaseUrl.startsWith("mysql://"))) {
             URI dbUri = new URI(databaseUrl);
-            String username = dbUri.getUserInfo().split(":")[0];
-            String password = dbUri.getUserInfo().split(":")[1];
+            String username = "";
+            String password = "";
+            if (dbUri.getUserInfo() != null) {
+                String[] userInfo = dbUri.getUserInfo().split(":");
+                username = userInfo[0];
+                if (userInfo.length > 1) {
+                    password = userInfo[1];
+                }
+            }
             
-            // Get port or default to 5432
-            int port = dbUri.getPort();
-            String portStr = port == -1 ? "5432" : String.valueOf(port);
-            
-            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + portStr + dbUri.getPath();
-            
-            return DataSourceBuilder.create()
-                    .url(dbUrl)
-                    .username(username)
-                    .password(password)
-                    .driverClassName("org.postgresql.Driver")
-                    .build();
+            if (databaseUrl.startsWith("mysql://")) {
+                int port = dbUri.getPort();
+                String portStr = port == -1 ? "3306" : String.valueOf(port);
+                String query = dbUri.getQuery();
+                String extraParams = "?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true";
+                if (query != null && !query.isEmpty()) {
+                    extraParams = "?" + query;
+                }
+                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + ":" + portStr + dbUri.getPath() + extraParams;
+                return DataSourceBuilder.create()
+                        .url(dbUrl)
+                        .username(username)
+                        .password(password)
+                        .driverClassName("com.mysql.cj.jdbc.Driver")
+                        .build();
+            } else {
+                int port = dbUri.getPort();
+                String portStr = port == -1 ? "5432" : String.valueOf(port);
+                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + portStr + dbUri.getPath();
+                return DataSourceBuilder.create()
+                        .url(dbUrl)
+                        .username(username)
+                        .password(password)
+                        .driverClassName("org.postgresql.Driver")
+                        .build();
+            }
         }
         
         // Fallback to default spring datasource configuration (MySQL / Local)
