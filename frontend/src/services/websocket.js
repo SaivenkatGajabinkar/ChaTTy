@@ -27,7 +27,7 @@ class WebSocketService {
         this.stompClient.debug = () => {};
 
         this.stompClient.connect({}, () => {
-            console.log("Connected to WebSocket");
+
             
             this.stompClient.subscribe(`/topic/messages/${userId}`, (message) => {
                 if (message.body && this.onMessageReceived) {
@@ -72,7 +72,7 @@ class WebSocketService {
     disconnect() {
         if (this.stompClient !== null) {
             this.stompClient.disconnect();
-            console.log("Disconnected from WebSocket");
+
         }
     }
 }

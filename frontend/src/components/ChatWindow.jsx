@@ -41,7 +41,7 @@ const ChatWindow = ({ conversation, currentUser, otherUserName }) => {
     const playNotification = (newMessage) => {
         // Play WhatsApp-style ping sound
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+        audio.play().catch(() => { /* Audio blocked */ });
 
         // Show browser notification
         if (Notification.permission === "granted") {

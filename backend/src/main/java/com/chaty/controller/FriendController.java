@@ -10,11 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/friend")
-@CrossOrigin(origins = "*")
 public class FriendController {
 
     @Autowired
-    private com.chaty.service.FriendService friendService;
+    private FriendService friendService;
 
     @Autowired
     private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;

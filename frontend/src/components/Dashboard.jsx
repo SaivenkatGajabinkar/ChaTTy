@@ -42,7 +42,7 @@ const Dashboard = ({ user, onLogout }) => {
             // This is for real-time messages, handled in ChatWindow
             // But if we wanted to show a global notification badge, we could here
         }, (notif) => {
-            console.log("Notification received:", notif);
+
             if (notif === "FRIEND_REQUEST_RECEIVED" || notif === "FRIEND_REQUEST_ACCEPTED") {
                 loadFriends();
                 loadPendingRequests();

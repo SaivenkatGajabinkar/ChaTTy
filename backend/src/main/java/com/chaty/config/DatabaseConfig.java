@@ -57,25 +57,25 @@ public class DatabaseConfig {
             }
         }
         
-        // Fallback to default spring datasource configuration (MySQL / Local)
-        String url = System.getenv("MYSQL_URL");
+        // Fallback to default spring datasource configuration (PostgreSQL / Local)
+        String url = System.getenv("DATABASE_URL");
         if (url == null) {
-            url = "jdbc:mysql://localhost:3306/chaty_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true";
+            url = "jdbc:postgresql://localhost:5432/chaty_db";
         }
-        String username = System.getenv("MYSQL_USER");
+        String username = System.getenv("DB_USER");
         if (username == null) {
-            username = "root";
+            username = "postgres";
         }
-        String password = System.getenv("MYSQL_PASSWORD");
+        String password = System.getenv("DB_PASSWORD");
         if (password == null) {
-            password = "SaiVenkat@123";
+            password = "";
         }
         
         return DataSourceBuilder.create()
                 .url(url)
                 .username(username)
                 .password(password)
-                .driverClassName("com.mysql.cj.jdbc.Driver")
+                .driverClassName("org.postgresql.Driver")
                 .build();
     }
 }
