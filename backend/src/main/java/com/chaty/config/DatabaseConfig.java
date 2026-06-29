@@ -1,5 +1,6 @@
 package com.chaty.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import javax.sql.DataSource;
@@ -9,6 +10,15 @@ import java.net.URISyntaxException;
 
 @Configuration
 public class DatabaseConfig {
+
+    @Value("${spring.datasource.url}")
+    private String defaultUrl;
+
+    @Value("${spring.datasource.username}")
+    private String defaultUsername;
+
+    @Value("${spring.datasource.password}")
+    private String defaultPassword;
 
     @Bean
     public DataSource dataSource() throws URISyntaxException {
@@ -47,7 +57,8 @@ public class DatabaseConfig {
             } else {
                 int port = dbUri.getPort();
                 String portStr = port == -1 ? "5432" : String.valueOf(port);
-                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + portStr + dbUri.getPath();
+                // Append SSL and SNI options for Neon PostgreSQL routing
+                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + portStr + dbUri.getPath() + "?sslmode=require&options=endpoint%3Dep-round-wind-adzvb2hz";
                 return DataSourceBuilder.create()
                         .url(dbUrl)
                         .username(username)
@@ -57,24 +68,11 @@ public class DatabaseConfig {
             }
         }
         
-        // Fallback to default spring datasource configuration (PostgreSQL / Local)
-        String url = System.getenv("DATABASE_URL");
-        if (url == null) {
-            url = "jdbc:postgresql://localhost:5432/chaty_db";
-        }
-        String username = System.getenv("DB_USER");
-        if (username == null) {
-            username = "postgres";
-        }
-        String password = System.getenv("DB_PASSWORD");
-        if (password == null) {
-            password = "";
-        }
-        
+        // Fallback to the settings configured in application.properties!
         return DataSourceBuilder.create()
-                .url(url)
-                .username(username)
-                .password(password)
+                .url(defaultUrl)
+                .username(defaultUsername)
+                .password(defaultPassword)
                 .driverClassName("org.postgresql.Driver")
                 .build();
     }
