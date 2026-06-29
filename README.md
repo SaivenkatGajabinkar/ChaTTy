@@ -39,3 +39,5 @@ This project demonstrates the implementation of:
 3. **JWT Security**: Implementing stateless authentication.
 4. **API Integration**: Handling external translation services.
 5. **State Management**: Managing complex real-time states in a React application.
+# ChaTTy
+online chating platform
