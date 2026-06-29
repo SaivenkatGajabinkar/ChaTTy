@@ -4,32 +4,26 @@ This guide provides step-by-step instructions to deploy the **ChaTTy** full-stac
 
 - **Frontend (React + Vite)** is deployed to **Vercel**.
 - **Backend (Spring Boot + WebSockets)** is deployed to **Render** using a multi-stage Docker build.
-- **Database (MySQL)** is deployed on a cloud MySQL provider (like **Aiven**, **Clever Cloud**, or **TiDB Cloud**).
+- **Database (PostgreSQL)** is deployed on a cloud provider (like **Neon**).
 
 ---
 
-## 🛠️ Step 1: Set Up a Cloud MySQL Database
+## 🛠️ Step 1: Set Up a Cloud PostgreSQL Database
 
-Your backend needs a persistent MySQL database. Since Render's Free tier does not include a free persistent MySQL database directly anymore, we highly recommend using a free external cloud database provider like **Aiven** or **Clever Cloud**.
+Your backend needs a persistent PostgreSQL database. Since Render's Free tier does not include a free persistent database directly anymore, we highly recommend using a free cloud database provider like **Neon**.
 
-### Option A: Using Clever Cloud (Recommended & Free)
-1. Go to [Clever Cloud](https://www.clever-cloud.com/) and create a free account.
-2. Click **"Create..."** -> **"An add-on"** -> select **"MySQL"**.
-3. Choose the **Free Plan (Shared)** and click **"Create"**.
-4. Once created, go to the add-on page. Under **"Connection URIs"**, copy the following values:
-   - **Host** (e.g., `bhxx...mysql.services.clever-cloud.com`)
-   - **Database Name** (e.g., `bhxx...`)
-   - **User** (e.g., `ujxx...`)
-   - **Password** (e.g., `wRxx...`)
-   - **Port** (usually `3306`)
-
-### Option B: Using Aiven (Free Tier Available)
-1. Go to [Aiven](https://aiven.io/) and sign up.
-2. Create a **MySQL** service on the free tier.
-3. Once active, copy the **Service URI**, **Host**, **Port**, **User**, and **Password**.
+### Using Neon (Free & Managed)
+1. Go to [Neon](https://neon.tech/) and create a free account.
+2. Create a new project named `chatty-db` and select the **PostgreSQL** version.
+3. Once created, you will see your **Connection Details** on the dashboard. Copy the following:
+   - **Host** (e.g., `ep-round-wind-adzvb2hz-pooler.c-2.us-east-1.aws.neon.tech`)
+   - **Database Name** (usually `neondb`)
+   - **Username** (usually `neondb_owner`)
+   - **Password** (e.g., `npg_KeRO...`)
 
 > [!IMPORTANT]
-> Write down your database Host, Database Name, User, and Password. You will need them in **Step 2**.
+> The database connection URL for Java Spring Boot must use the **`jdbc:postgresql://`** prefix.
+> Write down your database Host, Database Name, Username, and Password. You will need them in **Step 2**.
 
 ---
 
@@ -37,7 +31,7 @@ Your backend needs a persistent MySQL database. Since Render's Free tier does no
 
 We have created an optimized `backend/Dockerfile` that automatically handles the Maven build and creates the `.jar` execution package directly inside Render's cloud container. **You do not need to commit any `.jar` files to Git!**
 
-1. Push your latest code changes (including the new `backend/Dockerfile`) to your **GitHub** repository.
+1. Push your latest code changes (including the new `backend/Dockerfile` and `application.properties`) to your **GitHub** repository.
 2. Log in to [Render](https://render.com/).
 3. Click the **"New +"** button in the top right and select **"Web Service"**.
 4. Connect your GitHub repository.
@@ -50,9 +44,8 @@ We have created an optimized `backend/Dockerfile` that automatically handles the
 
 | Key | Value / Example | Description |
 |---|---|---|
-| `MYSQL_URL` | `jdbc:mysql://<YOUR_DB_HOST>:<PORT>/<DATABASE_NAME>?useSSL=true` | The JDBC connection string to your cloud database |
-| `MYSQL_USER` | `<YOUR_DATABASE_USER>` | Your cloud database username |
-| `MYSQL_PASSWORD` | `<YOUR_DATABASE_PASSWORD>` | Your cloud database password |
+| `DB_USER` | `neondb_owner` | Your Neon database username |
+| `DB_PASSWORD` | `npg_KeROBkAg15CI` | Your Neon database password |
 | `CORS_ORIGIN` | `https://your-frontend.vercel.app` *(Leave as `*` temporarily, update in Step 4)* | The URL of your deployed frontend |
 
 7. Click **"Create Web Service"**.
